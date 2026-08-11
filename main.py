@@ -63,7 +63,7 @@ WEB_SOURCES = [
 
 
 # ============================================================
-# СЛОВА, СВЯЗАННЫЕ С АТАКАМИ
+# АТАКИ
 # ============================================================
 
 ATTACK_WORDS = [
@@ -72,6 +72,7 @@ ATTACK_WORDS = [
     "беспилотника",
     "беспилотников",
     "беспилотного",
+    "беспилотный",
     "дрон",
     "дрона",
     "дронов",
@@ -122,18 +123,9 @@ ATTACK_WORDS = [
 ]
 
 
-# Контекст, усиливающий связь с Украиной.
-UKRAINE_WORDS = [
-    "украин",
-    "всу",
-    "со стороны украины",
-    "украинский беспилотник",
-    "украинский бпла",
-    "украинский дрон",
-    "украинская атака",
-    "киевский режим",
-]
-
+# ============================================================
+# ПОГИБШИЕ / ПОСТРАДАВШИЕ
+# ============================================================
 
 CASUALTY_WORDS = [
     "погиб",
@@ -165,120 +157,136 @@ CASUALTY_WORDS = [
 
 
 # ============================================================
-# ИСКЛЮЧАЕМ ЯВНО ПОСТОРОННИЕ СОБЫТИЯ
+# ИСКЛЮЧАЕМ ЗАРУБЕЖНЫЕ СОБЫТИЯ
 # ============================================================
 
 FOREIGN_WORDS = [
     "хусит",
     "йемен",
     "йеменск",
+    "красное море",
+    "баб-эль-мандеб",
+
     "израил",
-    "газа",
-    "секторе газа",
+    "сектор газа",
+    "газе",
     "ливан",
     "сирия",
     "иран",
     "ирак",
-    "красное море",
-    "баб-эль-мандеб",
-    "судно",
-    "корабль в красном море",
-]
 
-NON_ATTACK_WORDS = [
-    "дтп",
-    "автоавария",
-    "столкновение автомобилей",
-    "утонул",
-    "утонула",
-    "отравление",
+    "палестин",
+    "хамас",
+    "хезболл",
+
+    "судно в красном море",
+    "корабль в красном море",
 ]
 
 
 # ============================================================
 # РЕГИОНЫ РФ
-# Включены также формы, которые обычно встречаются в тексте.
 # ============================================================
 
 REGIONS = {
+
     "Белгородская область": [
         "белгородская область",
         "белгородской области",
     ],
+
     "Курская область": [
         "курская область",
         "курской области",
     ],
+
     "Брянская область": [
         "брянская область",
         "брянской области",
     ],
+
     "Воронежская область": [
         "воронежская область",
         "воронежской области",
     ],
+
     "Ростовская область": [
         "ростовская область",
         "ростовской области",
     ],
+
     "Липецкая область": [
         "липецкая область",
         "липецкой области",
     ],
+
     "Орловская область": [
         "орловская область",
         "орловской области",
     ],
+
     "Тульская область": [
         "тульская область",
         "тульской области",
     ],
+
     "Калужская область": [
         "калужская область",
         "калужской области",
     ],
+
     "Московская область": [
         "московская область",
         "московской области",
         "подмосковье",
         "подмосковья",
     ],
+
     "Смоленская область": [
         "смоленская область",
         "смоленской области",
     ],
+
     "Тверская область": [
         "тверская область",
         "тверской области",
     ],
+
     "Рязанская область": [
         "рязанская область",
         "рязанской области",
     ],
+
     "Тамбовская область": [
         "тамбовская область",
         "тамбовской области",
     ],
+
     "Волгоградская область": [
         "волгоградская область",
         "волгоградской области",
     ],
+
     "Саратовская область": [
         "саратовская область",
         "саратовской области",
     ],
+
     "Самарская область": [
         "самарская область",
         "самарской области",
     ],
+
     "Оренбургская область": [
         "оренбургская область",
         "оренбургской области",
     ],
+
     "Нижегородская область": [
         "нижегородская область",
         "нижегородской области",
     ],
+
     "Ленинградская область": [
         "ленинградская область",
         "ленинградской области",
@@ -289,10 +297,12 @@ REGIONS = {
         "краснодарского края",
         "кубани",
     ],
+
     "Ставропольский край": [
         "ставропольский край",
         "ставропольского края",
     ],
+
     "Пермский край": [
         "пермский край",
         "пермского края",
@@ -304,34 +314,41 @@ REGIONS = {
         "татарстан",
         "татарстана",
     ],
+
     "Республика Башкортостан": [
         "республика башкортостан",
         "башкортостан",
         "башкирии",
     ],
+
     "Республика Дагестан": [
         "республика дагестан",
         "дагестан",
         "дагестане",
     ],
+
     "Республика Крым": [
         "республика крым",
         "крым",
         "крыму",
     ],
+
     "Республика Адыгея": [
         "адыгея",
         "адыгее",
     ],
+
     "Республика Северная Осетия — Алания": [
         "северная осетия",
         "северной осетии",
     ],
+
     "Чеченская Республика": [
         "чечня",
         "чечне",
         "чеченская республика",
     ],
+
     "Республика Ингушетия": [
         "ингушетия",
         "ингушетии",
@@ -341,12 +358,14 @@ REGIONS = {
         "москва",
         "москве",
     ],
+
     "Санкт-Петербург": [
         "санкт-петербург",
         "санкт-петербурге",
         "петербург",
         "петербурге",
     ],
+
     "Севастополь": [
         "севастополь",
         "севастополе",
@@ -355,11 +374,11 @@ REGIONS = {
 
 
 # ============================================================
-# ИЗВЕСТНЫЕ НАСЕЛЕННЫЕ ПУНКТЫ
-# Это помогает не превращать "в результате" в город.
+# ИЗВЕСТНЫЕ НАСЕЛЁННЫЕ ПУНКТЫ
 # ============================================================
 
 KNOWN_CITIES = {
+
     "белгород": "Белгород",
     "шебекино": "Шебекино",
     "грайворон": "Грайворон",
@@ -408,10 +427,11 @@ KNOWN_CITIES = {
 
 
 # ============================================================
-# ЧИСЛА СЛОВАМИ
+# ЧИСЛА
 # ============================================================
 
 NUMBER_WORDS = {
+
     "один": 1,
     "одна": 1,
     "одного": 1,
@@ -455,19 +475,31 @@ NUM_TOKEN = (
 
 
 # ============================================================
-# ОБЩИЕ ФУНКЦИИ
+# ОЧИСТКА
 # ============================================================
 
 def clean_text(text):
+
     if not text:
         return ""
 
     text = html.unescape(text)
 
-    soup = BeautifulSoup(text, "html.parser")
-    text = soup.get_text(" ", strip=True)
+    soup = BeautifulSoup(
+        text,
+        "html.parser"
+    )
 
-    text = re.sub(r"\s+", " ", text)
+    text = soup.get_text(
+        " ",
+        strip=True
+    )
+
+    text = re.sub(
+        r"\s+",
+        " ",
+        text
+    )
 
     bad = [
         "if you are not a bot",
@@ -481,35 +513,73 @@ def clean_text(text):
     lower = text.lower()
 
     for phrase in bad:
+
         if phrase in lower:
             return ""
 
     return text.strip()
 
 
+# ============================================================
+# SEEN
+# ============================================================
+
 def load_seen():
+
     try:
-        with open(SEEN_FILE, "r", encoding="utf-8") as f:
-            return set(json.load(f))
+
+        with open(
+            SEEN_FILE,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            return set(
+                json.load(f)
+            )
+
     except Exception:
+
         return set()
 
 
 def save_seen(seen):
+
     try:
-        with open(SEEN_FILE, "w", encoding="utf-8") as f:
-            json.dump(list(seen), f, ensure_ascii=False)
+
+        with open(
+            SEEN_FILE,
+            "w",
+            encoding="utf-8"
+        ) as f:
+
+            json.dump(
+                list(seen),
+                f,
+                ensure_ascii=False
+            )
+
     except Exception as e:
-        print("Ошибка seen:", e)
+
+        print(
+            "Ошибка seen:",
+            e
+        )
 
 
 def make_id(url):
+
     return hashlib.sha256(
         url.encode("utf-8")
     ).hexdigest()
 
 
+# ============================================================
+# ЧИСЛО ИЗ ТЕКСТА
+# ============================================================
+
 def number_value(value):
+
     if not value:
         return None
 
@@ -521,23 +591,34 @@ def number_value(value):
     return NUMBER_WORDS.get(value)
 
 
+# ============================================================
+# ПРЕДЛОЖЕНИЯ
+# ============================================================
+
 def split_sentences(text):
+
     return [
-        x.strip()
-        for x in re.split(
+        sentence.strip()
+
+        for sentence in re.split(
             r"(?<=[.!?])\s+",
             clean_text(text)
         )
-        if len(x.strip()) > 10
+
+        if len(
+            sentence.strip()
+        ) > 10
     ]
 
 
 # ============================================================
-# ПОЛУЧЕНИЕ ТЕКСТА СТАТЬИ
+# ЧТЕНИЕ СТАТЬИ
 # ============================================================
 
 def get_article_text(url):
+
     try:
+
         response = requests.get(
             url,
             headers=HEADERS,
@@ -561,23 +642,38 @@ def get_article_text(url):
             "aside",
             "form"
         ]):
+
             tag.decompose()
 
         paragraphs = []
 
         for p in soup.find_all("p"):
+
             text = clean_text(
-                p.get_text(" ", strip=True)
+                p.get_text(
+                    " ",
+                    strip=True
+                )
             )
 
             if len(text) >= 25:
-                paragraphs.append(text)
 
-        # Не тащим весь сайт.
-        return " ".join(paragraphs[:20])
+                paragraphs.append(
+                    text
+                )
+
+        return " ".join(
+            paragraphs[:20]
+        )
 
     except Exception as e:
-        print("Ошибка статьи:", url, e)
+
+        print(
+            "Ошибка статьи:",
+            url,
+            e
+        )
+
         return ""
 
 
@@ -586,64 +682,87 @@ def get_article_text(url):
 # ============================================================
 
 def detect_region(text):
-    low = clean_text(text).lower()
+
+    low = clean_text(
+        text
+    ).lower()
 
     found = []
 
     for canonical, variants in REGIONS.items():
+
         for variant in variants:
-            pos = low.find(variant)
+
+            pos = low.find(
+                variant
+            )
 
             if pos >= 0:
+
                 found.append(
-                    (pos, canonical)
+                    (
+                        pos,
+                        canonical
+                    )
                 )
 
     if not found:
         return None
 
-    # Самое раннее упоминание в тексте.
-    found.sort(key=lambda x: x[0])
+    found.sort(
+        key=lambda x: x[0]
+    )
 
     return found[0][1]
 
 
 # ============================================================
-# ГОРОД / НАСЕЛЕННЫЙ ПУНКТ
+# ГОРОД
 # ============================================================
 
 def detect_city(text, region=None):
+
     clean = clean_text(text)
     low = clean.lower()
 
-    # Сначала ищем по словарю известных населённых пунктов.
     positions = []
 
     for variant, canonical in KNOWN_CITIES.items():
+
         match = re.search(
-            r"\b" + re.escape(variant) + r"\b",
+            r"\b"
+            + re.escape(variant)
+            + r"\b",
             low
         )
 
         if match:
+
             positions.append(
-                (match.start(), canonical)
+                (
+                    match.start(),
+                    canonical
+                )
             )
 
     if positions:
-        positions.sort(key=lambda x: x[0])
+
+        positions.sort(
+            key=lambda x: x[0]
+        )
 
         city = positions[0][1]
 
-        # Москва не должна становиться местом события
-        # только потому, что Интерфакс начал текст:
-        # "Москва. 11 августа. INTERFAX.RU..."
+        # Интерфакс часто начинает статью словом "Москва",
+        # хотя само событие произошло в другом регионе.
         if (
             city == "Москва"
             and region
             and region != "Москва"
         ):
+
             for _, candidate in positions[1:]:
+
                 if candidate != "Москва":
                     return candidate
 
@@ -651,9 +770,10 @@ def detect_city(text, region=None):
 
         return city
 
-    # Затем явные конструкции:
     patterns = [
-        r"(?:городе|город|г\.)\s+([А-ЯЁ][а-яё-]+(?:-[А-ЯЁа-яё-]+)?)",
+
+        r"(?:городе|город|г\.)\s+"
+        r"([А-ЯЁ][а-яё-]+(?:-[А-ЯЁа-яё-]+)?)",
 
         r"(?:поселке|посёлке|поселок|посёлок)\s+"
         r"([А-ЯЁ][а-яё-]+(?:-[А-ЯЁа-яё-]+)?)",
@@ -669,22 +789,17 @@ def detect_city(text, region=None):
     ]
 
     for pattern in patterns:
-        match = re.search(pattern, clean)
+
+        match = re.search(
+            pattern,
+            clean
+        )
 
         if match:
+
             return match.group(1)
 
     return None
-
-
-# ============================================================
-# ПРОВЕРКА: ЭТО ВООБЩЕ РФ?
-# ============================================================
-
-def is_russian_event(text):
-    region = detect_region(text)
-
-    return region is not None
 
 
 # ============================================================
@@ -692,21 +807,28 @@ def is_russian_event(text):
 # ============================================================
 
 def relevant(text):
+
     text = clean_text(text)
     low = text.lower()
 
     if not text:
         return False
 
-    # Зарубежные военные события сразу исключаем.
-    if any(word in low for word in FOREIGN_WORDS):
+    # Зарубежные события исключаем.
+    if any(
+        word in low
+        for word in FOREIGN_WORDS
+    ):
+
         return False
 
-    # Обязательно территория РФ.
-    if not is_russian_event(text):
+    # Обязательно должен определяться регион РФ.
+    region = detect_region(text)
+
+    if not region:
         return False
 
-    # Должно быть событие типа БПЛА/обстрел/ракета/ПВО и т.п.
+    # Должен быть признак атаки.
     has_attack = any(
         word in low
         for word in ATTACK_WORDS
@@ -715,7 +837,7 @@ def relevant(text):
     if not has_attack:
         return False
 
-    # Должны быть человеческие потери.
+    # Должны быть погибшие или пострадавшие.
     has_casualties = any(
         word in low
         for word in CASUALTY_WORDS
@@ -724,8 +846,9 @@ def relevant(text):
     if not has_casualties:
         return False
 
-    # ДТП без атаки не берём.
+    # ДТП без связи с атакой исключаем.
     if "дтп" in low:
+
         strong_attack = any(
             word in low
             for word in [
@@ -750,52 +873,70 @@ def relevant(text):
 # ============================================================
 
 def extract_dead(text):
-    low = clean_text(text).lower().replace("ё", "е")
+
+    low = clean_text(
+        text
+    ).lower().replace(
+        "ё",
+        "е"
+    )
 
     patterns = [
-        # "погибли 13 человек"
-        rf"(?:погибли|погибло)\s+(?:как минимум\s+|не менее\s+)?({NUM_TOKEN})",
 
-        # "13 человек погибли"
-        rf"({NUM_TOKEN})\s+(?:человек[а-я]*\s+)?(?:погибли|погибло)",
+        rf"(?:погибли|погибло)\s+"
+        rf"(?:как минимум\s+|не менее\s+)?"
+        rf"({NUM_TOKEN})",
 
-        # "погиб один человек"
-        rf"(?:погиб|погибла)\s+({NUM_TOKEN})",
+        rf"({NUM_TOKEN})\s+"
+        rf"(?:человек[а-я]*\s+)?"
+        rf"(?:погибли|погибло)",
 
-        # "число погибших выросло до 13"
-        rf"(?:число|количество)\s+погибших[^.!?]{{0,70}}?\bдо\s+({NUM_TOKEN})",
+        rf"(?:погиб|погибла)\s+"
+        rf"({NUM_TOKEN})",
 
-        # "количество жертв увеличилось до 13"
-        rf"(?:число|количество)\s+жертв[^.!?]{{0,70}}?\bдо\s+({NUM_TOKEN})",
+        rf"(?:число|количество)\s+"
+        rf"погибших[^.!?]{{0,70}}?"
+        rf"\bдо\s+({NUM_TOKEN})",
 
-        # "погибших 13 человек"
-        rf"погибших\s+(?:насчитывается\s+)?({NUM_TOKEN})",
+        rf"(?:число|количество)\s+"
+        rf"жертв[^.!?]{{0,70}}?"
+        rf"\bдо\s+({NUM_TOKEN})",
+
+        rf"погибших\s+"
+        rf"(?:насчитывается\s+)?"
+        rf"({NUM_TOKEN})",
     ]
 
     values = []
 
     for pattern in patterns:
+
         for match in re.finditer(
             pattern,
             low,
             flags=re.IGNORECASE
         ):
+
             value = number_value(
                 match.group(1)
             )
 
             if value is not None:
-                values.append(value)
+
+                values.append(
+                    value
+                )
 
     if values:
+
         return max(values)
 
-    # Одно лицо без цифры.
     if re.search(
         r"\bпогиб(?:ла)?\s+"
         r"(?:мужчина|женщина|ребенок|ребёнок|водитель|человек)\b",
         low
     ):
+
         return 1
 
     return None
@@ -806,57 +947,75 @@ def extract_dead(text):
 # ============================================================
 
 def extract_injured(text):
-    low = clean_text(text).lower().replace("ё", "е")
+
+    low = clean_text(
+        text
+    ).lower().replace(
+        "ё",
+        "е"
+    )
 
     patterns = [
-        # "пострадали 39 человек"
+
         rf"(?:пострадали|пострадало)\s+"
-        rf"(?:как минимум\s+|не менее\s+)?({NUM_TOKEN})",
+        rf"(?:как минимум\s+|не менее\s+)?"
+        rf"({NUM_TOKEN})",
 
-        # "39 человек пострадали"
-        rf"({NUM_TOKEN})\s+"
-        rf"(?:человек[а-я]*\s+)?(?:пострадали|пострадало)",
-
-        # "пострадал один человек"
-        rf"(?:пострадал|пострадала)\s+({NUM_TOKEN})",
-
-        # "ранены 39 человек"
-        rf"(?:ранены|ранено)\s+"
-        rf"(?:как минимум\s+|не менее\s+)?({NUM_TOKEN})",
-
-        # "39 человек ранены"
-        rf"({NUM_TOKEN})\s+"
-        rf"(?:человек[а-я]*\s+)?(?:ранены|ранено)",
-
-        # "39 человек получили ранения"
         rf"({NUM_TOKEN})\s+"
         rf"(?:человек[а-я]*\s+)?"
-        rf"получил[аи]?\s+(?:различные\s+)?ранения",
+        rf"(?:пострадали|пострадало)",
 
-        # "число пострадавших выросло до 39"
-        rf"(?:число|количество)\s+пострадавших"
-        rf"[^.!?]{{0,70}}?\bдо\s+({NUM_TOKEN})",
+        rf"(?:пострадал|пострадала)\s+"
+        rf"({NUM_TOKEN})",
 
-        # "пострадавших 39 человек"
-        rf"пострадавших\s+(?:насчитывается\s+)?({NUM_TOKEN})",
+        rf"(?:ранены|ранено)\s+"
+        rf"(?:как минимум\s+|не менее\s+)?"
+        rf"({NUM_TOKEN})",
+
+        rf"({NUM_TOKEN})\s+"
+        rf"(?:человек[а-я]*\s+)?"
+        rf"(?:ранены|ранено)",
+
+        rf"({NUM_TOKEN})\s+"
+        rf"(?:человек[а-я]*\s+)?"
+        rf"получил[аи]?\s+"
+        rf"(?:различные\s+)?ранения",
+
+        rf"(?:число|количество)\s+"
+        rf"пострадавших[^.!?]{{0,70}}?"
+        rf"\bдо\s+({NUM_TOKEN})",
+
+        rf"(?:число|количество)\s+"
+        rf"раненых[^.!?]{{0,70}}?"
+        rf"\bдо\s+({NUM_TOKEN})",
+
+        rf"пострадавших\s+"
+        rf"(?:насчитывается\s+)?"
+        rf"({NUM_TOKEN})",
     ]
 
     values = []
 
     for pattern in patterns:
+
         for match in re.finditer(
             pattern,
             low,
             flags=re.IGNORECASE
         ):
+
             value = number_value(
                 match.group(1)
             )
 
             if value is not None:
-                values.append(value)
+
+                values.append(
+                    value
+                )
 
     if values:
+
         return max(values)
 
     if re.search(
@@ -864,39 +1023,60 @@ def extract_injured(text):
         r"(?:мужчина|женщина|ребенок|ребёнок|водитель|человек)\b",
         low
     ):
+
         return 1
 
     return None
 
 
 # ============================================================
-# КРАТКОЕ ОПИСАНИЕ ПРОИСШЕСТВИЯ
+# КРАТКОЕ ОПИСАНИЕ
 # ============================================================
 
 def make_description(title, text):
-    sentences = split_sentences(text)
+
+    sentences = split_sentences(
+        text
+    )
 
     selected = []
 
-    # Берём предложения, непосредственно описывающие атаку.
     for sentence in sentences:
+
         low = sentence.lower()
 
         if any(
             attack_word in low
             for attack_word in ATTACK_WORDS
         ):
-            selected.append(sentence)
+
+            selected.append(
+                sentence
+            )
 
         if len(selected) >= 2:
             break
 
     if not selected:
-        selected = [clean_text(title)]
 
-    result = " ".join(selected)
+        selected = [
+            clean_text(title)
+        ]
 
-    # Убираем фирменную вводную Интерфакса.
+    result = " ".join(
+        selected
+    )
+
+    # Убираем служебную вводную Интерфакса.
+    result = re.sub(
+        r"^Москва\.\s*"
+        r"\d{1,2}\s+[а-яё]+\.\s*"
+        r"INTERFAX\.RU\s*[-–—]?\s*",
+        "",
+        result,
+        flags=re.IGNORECASE
+    )
+
     result = re.sub(
         r"^INTERFAX\.RU\s*[-–—]\s*",
         "",
@@ -904,17 +1084,14 @@ def make_description(title, text):
         flags=re.IGNORECASE
     )
 
-    result = re.sub(
-        r"^Москва\.\s*\d{1,2}\s+[а-я]+\.\s*INTERFAX\.RU\s*[-–—]?\s*",
-        "",
-        result,
-        flags=re.IGNORECASE
-    )
-
     if len(result) > 450:
+
         result = (
             result[:447]
-            .rsplit(" ", 1)[0]
+            .rsplit(
+                " ",
+                1
+            )[0]
             + "..."
         )
 
@@ -932,89 +1109,135 @@ def build_message(
     article,
     link
 ):
-    # Для цифр используем максимально полный текст.
+
     full_text = " ".join([
         clean_text(title),
         clean_text(description),
         clean_text(article),
     ])
 
-    if not relevant(full_text):
+    if not relevant(
+        full_text
+    ):
+
         return None
 
-    dead = extract_dead(full_text)
-    injured = extract_injured(full_text)
+    dead = extract_dead(
+        full_text
+    )
 
-    # Если алгоритм не нашёл ни одного числа,
-    # публикацию не делаем.
-    #
-    # Так безопаснее, чем писать неверные цифры.
-    if dead is None and injured is None:
+    injured = extract_injured(
+        full_text
+    )
+
+    # Если число ни погибших, ни пострадавших
+    # определить не удалось — не публикуем.
+    if (
+        dead is None
+        and injured is None
+    ):
+
         return None
 
-    # Для определения места используем НЕ весь сайт,
-    # а заголовок + RSS + первые предложения статьи.
-    article_sentences = split_sentences(article)
+    article_sentences = split_sentences(
+        article
+    )
 
+    # Для географии используем только начало новости,
+    # а не весь HTML сайта.
     location_text = " ".join([
         clean_text(title),
         clean_text(description),
-        " ".join(article_sentences[:4]),
+        " ".join(
+            article_sentences[:4]
+        ),
     ])
 
-    region = detect_region(location_text)
+    region = detect_region(
+        location_text
+    )
+
     city = detect_city(
         location_text,
         region
     )
 
     if city and region:
-        location = f"{city}, {region}"
+
+        location = (
+            f"{city}, {region}"
+        )
 
     elif region:
+
         location = region
 
     elif city:
+
         location = city
 
     else:
-        # Теоретически сюда не должны попасть,
-        # поскольку relevant() требует регион РФ.
+
         return None
 
     situation = make_description(
         title,
         " ".join(
             article_sentences[:6]
-        ) or description
+        )
+        or description
+    )
+
+    # Экранируем текст для HTML Telegram.
+    safe_location = html.escape(
+        location
+    )
+
+    safe_situation = html.escape(
+        situation
+    )
+
+    safe_source = html.escape(
+        source
+    )
+
+    safe_link = html.escape(
+        link,
+        quote=True
     )
 
     lines = [
-        f"⚡️{location}",
+        f"⚡️<b>{safe_location}</b>",
         "",
-        situation,
+        safe_situation,
         "",
     ]
 
-    # Если в новости ничего не сказано о погибших,
-    # не пишем выдуманный 0.
     if dead is not None:
+
         lines.append(
-            f"Погибли: {dead} человек"
+            f"<b>Погибли: {dead} человек</b>"
         )
 
     if injured is not None:
+
         lines.append(
-            f"Пострадали: {injured} человек"
+            f"<b>Пострадали: {injured} человек</b>"
         )
 
     lines.extend([
         "",
-        f"Источник: {source}",
-        link,
+        (
+            "Источник: "
+            f'<a href="{safe_link}">'
+            f'{safe_source}'
+            f'</a>'
+        ),
     ])
 
-    return "\n".join(lines)
+    return "\n".join(
+        lines
+    )
 
 
 # ============================================================
@@ -1028,12 +1251,17 @@ def publish(
     link,
     seen
 ):
-    uid = make_id(link)
+
+    uid = make_id(
+        link
+    )
 
     if uid in seen:
         return
 
-    article = get_article_text(link)
+    article = get_article_text(
+        link
+    )
 
     message = build_message(
         source,
@@ -1043,17 +1271,24 @@ def publish(
         link
     )
 
-    # Помечаем проверенную нерелевантную статью,
-    # чтобы не гонять её каждые 10 минут.
     if not message:
-        seen.add(uid)
-        save_seen(seen)
+
+        seen.add(
+            uid
+        )
+
+        save_seen(
+            seen
+        )
+
         return
 
     try:
+
         bot.send_message(
             CHANNEL_ID,
             message,
+            parse_mode="HTML",
             disable_web_page_preview=True
         )
 
@@ -1063,12 +1298,18 @@ def publish(
             title
         )
 
-        seen.add(uid)
-        save_seen(seen)
+        seen.add(
+            uid
+        )
+
+        save_seen(
+            seen
+        )
 
         time.sleep(2)
 
     except Exception as e:
+
         print(
             "Ошибка Telegram:",
             source,
@@ -1081,13 +1322,17 @@ def publish(
 # ============================================================
 
 def check_rss(seen):
+
     for source, rss_url in RSS_SOURCES:
+
         try:
+
             feed = feedparser.parse(
                 rss_url
             )
 
             for entry in feed.entries[:40]:
+
                 title = clean_text(
                     getattr(
                         entry,
@@ -1115,16 +1360,20 @@ def check_rss(seen):
                     ""
                 )
 
-                if not title or not link:
+                if (
+                    not title
+                    or not link
+                ):
+
                     continue
 
-                uid = make_id(link)
+                uid = make_id(
+                    link
+                )
 
                 if uid in seen:
                     continue
 
-                # Здесь не отбрасываем слишком рано:
-                # часть информации может быть только внутри статьи.
                 publish(
                     source,
                     title,
@@ -1134,6 +1383,7 @@ def check_rss(seen):
                 )
 
         except Exception as e:
+
             print(
                 "RSS:",
                 source,
@@ -1146,8 +1396,15 @@ def check_rss(seen):
 # ============================================================
 
 def check_web(seen):
-    for source, page_url, base_url in WEB_SOURCES:
+
+    for (
+        source,
+        page_url,
+        base_url
+    ) in WEB_SOURCES:
+
         try:
+
             response = requests.get(
                 page_url,
                 headers=HEADERS,
@@ -1155,11 +1412,13 @@ def check_web(seen):
             )
 
             if response.status_code != 200:
+
                 print(
                     source,
                     "HTTP",
                     response.status_code
                 )
+
                 continue
 
             soup = BeautifulSoup(
@@ -1177,6 +1436,7 @@ def check_web(seen):
                 "a",
                 href=True
             ):
+
                 title = clean_text(
                     a.get_text(
                         " ",
@@ -1196,35 +1456,46 @@ def check_web(seen):
                     link
                 ).netloc
 
-                if link_domain != base_domain:
+                if (
+                    link_domain
+                    != base_domain
+                ):
+
                     continue
 
-                # Интерфакс: берём статьи,
-                # но не раздел world.
+                # Зарубежный раздел Интерфакса исключаем.
                 if (
                     source == "Интерфакс"
                     and "/world/" in link
                 ):
+
                     continue
 
-                # Быстрый первичный фильтр.
-                low_title = title.lower()
+                low_title = (
+                    title.lower()
+                )
 
+                # Сначала проверяем хотя бы наличие
+                # признака атаки или человеческих потерь.
                 if not (
                     any(
-                        x in low_title
-                        for x in ATTACK_WORDS
+                        word in low_title
+                        for word in ATTACK_WORDS
                     )
                     or any(
-                        x in low_title
-                        for x in CASUALTY_WORDS
+                        word in low_title
+                        for word in CASUALTY_WORDS
                     )
                 ):
+
                     continue
 
                 links[link] = title
 
-            for link, title in list(
+            for (
+                link,
+                title
+            ) in list(
                 links.items()
             )[:30]:
 
@@ -1237,6 +1508,7 @@ def check_web(seen):
                 )
 
         except Exception as e:
+
             print(
                 "WEB:",
                 source,
@@ -1249,30 +1521,47 @@ def check_web(seen):
 # ============================================================
 
 def check_news():
+
     seen = load_seen()
 
-    print("Начинаю проверку СМИ")
+    print(
+        "Начинаю проверку СМИ"
+    )
 
-    check_rss(seen)
-    check_web(seen)
+    check_rss(
+        seen
+    )
 
-    print("Проверка СМИ завершена")
+    check_web(
+        seen
+    )
+
+    print(
+        "Проверка СМИ завершена"
+    )
 
 
 # ============================================================
 # ЗАПУСК
 # ============================================================
 
-print("Monitoring started")
+print(
+    "Monitoring started"
+)
 
 while True:
+
     try:
+
         check_news()
 
     except Exception as e:
+
         print(
             "Ошибка основного цикла:",
             e
         )
 
-    time.sleep(CHECK_INTERVAL)
+    time.sleep(
+        CHECK_INTERVAL
+    )
