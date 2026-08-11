@@ -1,1 +1,4 @@
 pyTelegramBotAPI
+feedparser
+requests
+beautifulsoup4
