@@ -34,13 +34,13 @@ STATE_FILE = "state.json"
 
 # ============================================================
 # ИСТОЧНИКИ
+# Российская газета УДАЛЕНА
 # ============================================================
 
 SOURCES = [
     ("ТАСС", "https://tass.ru/rss/v2.xml"),
     ("РИА Новости", "https://ria.ru/export/rss2/archive/index.xml"),
     ("Интерфакс", "https://www.interfax.ru/rss.asp"),
-    ("Российская газета", "https://rg.ru/xml/index.xml"),
 ]
 
 
@@ -53,7 +53,7 @@ HEADERS = {
 
 
 # ============================================================
-# РЕГИОНЫ РФ
+# РЕГИОНЫ
 # ============================================================
 
 REGIONS = [
@@ -148,7 +148,7 @@ REGIONS = [
 # ============================================================
 
 CITY_REGION = {
-    # Белгородская
+    # Белгородская область
     "Белгород": "Белгородская область",
     "Шебекино": "Белгородская область",
     "Грайворон": "Белгородская область",
@@ -156,22 +156,22 @@ CITY_REGION = {
     "Старый Оскол": "Белгородская область",
     "Губкин": "Белгородская область",
 
-    # Курская
+    # Курская область
     "Курск": "Курская область",
     "Рыльск": "Курская область",
     "Суджа": "Курская область",
     "Льгов": "Курская область",
     "Курчатов": "Курская область",
 
-    # Брянская
+    # Брянская область
     "Брянск": "Брянская область",
     "Клинцы": "Брянская область",
     "Стародуб": "Брянская область",
 
-    # Воронежская
+    # Воронежская область
     "Воронеж": "Воронежская область",
 
-    # Ростовская
+    # Ростовская область
     "Ростов-на-Дону": "Ростовская область",
     "Таганрог": "Ростовская область",
     "Новошахтинск": "Ростовская область",
@@ -204,7 +204,7 @@ CITY_REGION = {
     "Джанкой": "Республика Крым",
     "Евпатория": "Республика Крым",
 
-    # отдельные города
+    # федеральные города
     "Москва": "Москва",
     "Санкт-Петербург": "Санкт-Петербург",
     "Севастополь": "Севастополь",
@@ -231,8 +231,10 @@ ATTACK_WORDS = [
     "миномет",
     "миномёт",
     "пво",
+    "про",
     "обломк",
     "детонац",
+    "взрыв",
 ]
 
 
@@ -252,10 +254,9 @@ CASUALTY_WORDS = [
 ]
 
 
-REPORTAGE_WORDS = [
+# Материалы такого типа нам не нужны
+OLD_MATERIAL_WORDS = [
     "корреспондент побывал",
-    "корреспондент \"рг\"",
-    "корреспондент «рг»",
     "репортаж",
     "фоторепортаж",
     "интервью",
@@ -267,6 +268,8 @@ REPORTAGE_WORDS = [
     "год назад",
     "года назад",
     "лет назад",
+    "архив",
+    "история очевидца",
 ]
 
 
@@ -289,6 +292,9 @@ def load_state():
         return {"events": {}}
 
 
+state = load_state()
+
+
 def save_state():
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(
@@ -297,9 +303,6 @@ def save_state():
             ensure_ascii=False,
             indent=2
         )
-
-
-state = load_state()
 
 
 # ============================================================
@@ -346,16 +349,16 @@ def split_sentences(text):
 
 def has_attack(text):
     low = text.lower()
-    return any(x in low for x in ATTACK_WORDS)
+    return any(word in low for word in ATTACK_WORDS)
 
 
 def has_casualty(text):
     low = text.lower()
-    return any(x in low for x in CASUALTY_WORDS)
+    return any(word in low for word in CASUALTY_WORDS)
 
 
 # ============================================================
-# СКАЧИВАЕМ СТАТЬЮ
+# СТАТЬЯ
 # ============================================================
 
 def get_article(url):
@@ -373,9 +376,8 @@ def get_article(url):
             "html.parser"
         )
 
-        # Очень важно:
-        # убираем элементы, где часто находятся
-        # меню, рекомендации и другие новости.
+        # Убираем всё, что чаще всего содержит
+        # меню, связанные новости, рекламу и футер.
         for tag in soup.find_all([
             "script",
             "style",
@@ -384,7 +386,8 @@ def get_article(url):
             "header",
             "aside",
             "form",
-            "button"
+            "button",
+            "noscript"
         ]):
             tag.decompose()
 
@@ -393,10 +396,10 @@ def get_article(url):
         for p in soup.find_all("p"):
             txt = clean(p.get_text(" "))
 
-            if 25 <= len(txt) <= 2500:
+            if 30 <= len(txt) <= 2500:
                 paragraphs.append(txt)
 
-        return " ".join(paragraphs)[:25000]
+        return " ".join(paragraphs)[:30000]
 
     except Exception as e:
         print("ARTICLE ERROR:", url, e)
@@ -409,7 +412,11 @@ def get_article(url):
 
 def published_datetime(entry):
     try:
-        t = entry.published_parsed
+        t = getattr(
+            entry,
+            "published_parsed",
+            None
+        )
 
         if not t:
             return None
@@ -431,7 +438,7 @@ def published_datetime(entry):
 
 
 # ============================================================
-# ТОЛЬКО НОВЫЕ ПУБЛИКАЦИИ
+# ТОЛЬКО СВЕЖИЕ ПУБЛИКАЦИИ
 # ============================================================
 
 def publication_is_current(entry):
@@ -440,21 +447,24 @@ def publication_is_current(entry):
     if not dt:
         return False
 
-    age = now() - dt
-
-    # Только сегодняшний день
     if dt.date() != today():
         return False
 
-    # Защита от странной будущей даты
+    age = now() - dt
+
     if age < timedelta(minutes=-10):
+        return False
+
+    # Не тащим старые публикации сегодняшнего дня,
+    # найденные RSS спустя много часов.
+    if age > timedelta(hours=8):
         return False
 
     return True
 
 
 # ============================================================
-# ДАТА СОБЫТИЯ
+# ДАТЫ
 # ============================================================
 
 MONTHS = {
@@ -471,6 +481,23 @@ MONTHS = {
     "ноября": 11,
     "декабря": 12,
 }
+
+
+MONTH_NAMES = [
+    "",
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+]
 
 
 def find_dates(text):
@@ -510,42 +537,46 @@ def find_dates(text):
     return result
 
 
-def is_current_event(title, article, pub_dt):
+def current_event(title, summary, article, pub_dt):
     """
-    Нельзя считать дату публикации датой события.
-
-    Проверяем именно текст события.
+    Строгая проверка:
+    сегодняшняя публикация сама по себе
+    НЕ означает сегодняшнее происшествие.
     """
 
-    intro = clean(
-        title + ". " + article[:5000]
+    text = clean(
+        title + ". " +
+        summary + ". " +
+        article[:5000]
     )
 
-    low = intro.lower()
+    low = text.lower()
 
-    # Репортаж / старый материал
-    if any(x in low for x in REPORTAGE_WORDS):
+    if any(
+        marker in low
+        for marker in OLD_MATERIAL_WORDS
+    ):
         return False
 
-    dates = find_dates(intro)
+    dates = find_dates(text[:3500])
 
-    # Если сегодняшняя дата прямо указана
+    # Если явно упомянута сегодняшняя дата
     if today() in dates:
         return True
 
-    # Важный случай:
-    # в начале текста прямо указана старая дата.
-    beginning = intro[:1800]
+    # Если в начале статьи стоит прошлая дата,
+    # материал не публикуем.
+    beginning_dates = find_dates(
+        text[:1800]
+    )
 
-    old_dates = [
-        d for d in find_dates(beginning)
-        if d < today()
-    ]
-
-    if old_dates:
+    if any(
+        d < today()
+        for d in beginning_dates
+    ):
         return False
 
-    CURRENT_MARKERS = [
+    current_markers = [
         "сегодня",
         "сегодня утром",
         "сегодня днем",
@@ -554,238 +585,242 @@ def is_current_event(title, article, pub_dt):
         "этой ночью",
         "минувшей ночью",
         "в ночь на",
-        "утром",
+        "утром в среду",
+        "утром во вторник",
+        "утром в понедельник",
+        "утром в четверг",
+        "утром в пятницу",
+        "утром в субботу",
+        "утром в воскресенье",
     ]
 
+    first = low[:2500]
+
     if any(
-        x in low[:2500]
-        for x in CURRENT_MARKERS
+        marker in first
+        for marker in current_markers
     ):
         return True
 
-    # Если конкретной даты нет:
-    # разрешаем только действительно свежую
-    # публикацию о непосредственном событии.
+    # Если дата события не написана,
+    # допускаем только очень свежую публикацию,
+    # где заголовок/начало прямо описывают происшествие.
     if pub_dt:
         age = now() - pub_dt
 
-        if timedelta(0) <= age <= timedelta(hours=4):
-            first = low[:1800]
+        direct_markers = [
+            "атаковал",
+            "атаковала",
+            "атаковали",
+            "атакован",
+            "подвергся атаке",
+            "подверглась атаке",
+            "в результате атаки",
+            "в результате обстрела",
+            "при атаке",
+            "при обстреле",
+            "после атаки",
+            "обломки бпла",
+            "обломки беспилотника",
+            "при падении обломков",
+        ]
 
-            DIRECT = [
-                "атаковал",
-                "атаковала",
-                "атаковали",
-                "подвергся атаке",
-                "подверглась атаке",
-                "в результате атаки",
-                "в результате обстрела",
-                "при атаке",
-                "при обстреле",
-                "обломки бпла",
-                "обломки беспилотника",
-            ]
-
-            if any(x in first for x in DIRECT):
-                return True
+        if (
+            timedelta(0)
+            <= age
+            <= timedelta(hours=3)
+            and any(x in first for x in direct_markers)
+        ):
+            return True
 
     return False
 
 
 # ============================================================
-# ВЫДЕЛЯЕМ ТОЛЬКО КОНТЕКСТ ПРОИСШЕСТВИЯ
+# ПРЕДЛОЖЕНИЯ, СВЯЗАННЫЕ С ОДНИМ ПРОИСШЕСТВИЕМ
 # ============================================================
 
-def get_incident_context(title, article):
+def incident_blocks(title, article):
     """
-    Это ключевое изменение.
+    Возвращает небольшие локальные блоки текста.
 
-    Мы больше НЕ определяем место и цифры
-    по всей странице.
-
-    Сначала находим предложения непосредственно
-    об атаке и пострадавших.
+    Это важно: нельзя объединять всю статью в один incident,
+    потому что в сводной статье могут одновременно быть
+    Белгород, Курск, Краснодар и т.д.
     """
 
-    sents = split_sentences(
+    sentences = split_sentences(
         title + ". " + article
     )
 
-    relevant_indexes = set()
+    blocks = []
 
-    for i, sent in enumerate(sents):
+    for i, sent in enumerate(sentences):
 
-        # Само предложение об атаке
-        if has_attack(sent):
-            relevant_indexes.add(i)
+        if not has_casualty(sent):
+            continue
 
-            if i > 0:
-                relevant_indexes.add(i - 1)
+        start = max(0, i - 2)
+        end = min(len(sentences), i + 3)
 
-            if i + 1 < len(sents):
-                relevant_indexes.add(i + 1)
+        block_sentences = sentences[start:end]
+        block = " ".join(block_sentences)
 
-            if i + 2 < len(sents):
-                relevant_indexes.add(i + 2)
+        if not has_attack(block):
+            continue
 
-        # Предложение с потерями
-        if has_casualty(sent):
-            # Но рядом обязательно должна быть атака
-            neighborhood = " ".join(
-                sents[max(0, i - 2):min(
-                    len(sents),
-                    i + 3
-                )]
-            )
+        blocks.append({
+            "sentences": block_sentences,
+            "casualty_index": i - start,
+            "text": block
+        })
 
-            if has_attack(neighborhood):
-                relevant_indexes.add(i)
-
-                if i > 0:
-                    relevant_indexes.add(i - 1)
-
-                if i + 1 < len(sents):
-                    relevant_indexes.add(i + 1)
-
-    if not relevant_indexes:
-        return ""
-
-    selected = [
-        sents[i]
-        for i in sorted(relevant_indexes)
-    ]
-
-    return " ".join(selected)[:5000]
+    return blocks
 
 
 # ============================================================
 # ГЕОГРАФИЯ
 # ============================================================
 
-def city_in_text(text):
-    """
-    Город ищется ТОЛЬКО в контексте происшествия.
-
-    Москва больше не может появиться из футера,
-    связанной новости или служебного текста.
-    """
-
-    matches = []
-
+def find_cities(text):
     low = text.lower()
+    result = []
 
     for city in CITY_REGION:
-        pos = low.find(city.lower())
-
-        if pos >= 0:
-            matches.append(
-                (pos, city)
+        for m in re.finditer(
+            r"(?<!\w)" +
+            re.escape(city.lower()) +
+            r"(?!\w)",
+            low
+        ):
+            result.append(
+                (m.start(), city)
             )
 
-    if not matches:
-        return None
-
-    matches.sort()
-
-    return matches[0][1]
+    return sorted(result)
 
 
-def region_in_text(text):
-    matches = []
-
+def find_regions(text):
     low = text.lower()
+    result = []
 
     for region in REGIONS:
-        pos = low.find(
-            region.lower()
-        )
-
-        if pos >= 0:
-            matches.append(
-                (pos, region)
+        for m in re.finditer(
+            r"(?<!\w)" +
+            re.escape(region.lower()) +
+            r"(?!\w)",
+            low
+        ):
+            result.append(
+                (m.start(), region)
             )
 
-    if not matches:
-        return None
-
-    matches.sort()
-
-    return matches[0][1]
+    return sorted(result)
 
 
-def determine_location(title, incident):
-    """
-    Приоритет:
-    1. город в заголовке;
-    2. город в предложении об атаке;
-    3. регион в заголовке;
-    4. регион в предложении об атаке.
+def location_from_sentence(sentence):
+    cities = find_cities(sentence)
 
-    НИКОГДА не смотрим всю страницу.
-    """
+    if cities:
+        city = cities[0][1]
 
-    title_city = city_in_text(title)
+        # Москва особенно опасна как ложное место.
+        if city == "Москва":
+            low = sentence.lower()
 
-    if title_city:
-        return (
-            title_city,
-            CITY_REGION.get(title_city)
-        )
+            valid = [
+                "в москве",
+                "на москву",
+                "над москвой",
+                "атаковали москву",
+                "атака на москву",
+            ]
 
-    incident_city = city_in_text(
-        incident
-    )
+            if not any(x in low for x in valid):
+                cities = [
+                    x for x in cities
+                    if x[1] != "Москва"
+                ]
 
-    if incident_city:
-        return (
-            incident_city,
-            CITY_REGION.get(incident_city)
-        )
+                if cities:
+                    city = cities[0][1]
+                else:
+                    city = None
 
-    title_region = region_in_text(
-        title
-    )
+        if city:
+            return city, CITY_REGION.get(city)
 
-    if title_region:
-        return None, title_region
+    regions = find_regions(sentence)
 
-    incident_region = region_in_text(
-        incident
-    )
-
-    if incident_region:
-        return None, incident_region
+    if regions:
+        return None, regions[0][1]
 
     return None, None
 
 
-# ============================================================
-# ОСОБАЯ ЗАЩИТА ОТ "МОСКВЫ"
-# ============================================================
-
-def validate_location(city, region, incident):
+def determine_block_location(block):
     """
-    Москва допускается ТОЛЬКО если само предложение
-    о происшествии явно говорит об атаке в Москве.
+    Ищем место максимально близко
+    к предложению с жертвами.
+
+    Заголовок статьи НЕ имеет автоматического
+    приоритета, потому что статья может быть сводной.
     """
 
-    if city == "Москва" or region == "Москва":
+    sentences = block["sentences"]
+    ci = block["casualty_index"]
 
-        low = incident.lower()
+    # 1. Само предложение с потерями
+    city, region = location_from_sentence(
+        sentences[ci]
+    )
 
-        strong_moscow = [
-            "в москве",
-            "на москву",
-            "над москвой",
-            "москву атак",
-            "атаке на москву",
-            "атаки на москву",
-        ]
+    if city or region:
+        return city, region
 
-        if not any(x in low for x in strong_moscow):
-            return False
+    # 2. Предыдущее предложение
+    if ci - 1 >= 0:
+        city, region = location_from_sentence(
+            sentences[ci - 1]
+        )
 
-    return True
+        if city or region:
+            return city, region
+
+    # 3. Следующее
+    if ci + 1 < len(sentences):
+        city, region = location_from_sentence(
+            sentences[ci + 1]
+        )
+
+        if city or region:
+            return city, region
+
+    # 4. Только после этого весь локальный блок
+    cities = find_cities(block["text"])
+
+    # Если в маленьком блоке несколько разных городов,
+    # не угадываем.
+    unique_cities = list(dict.fromkeys(
+        x[1] for x in cities
+        if x[1] != "Москва"
+    ))
+
+    if len(unique_cities) == 1:
+        city = unique_cities[0]
+        return city, CITY_REGION.get(city)
+
+    regions = find_regions(block["text"])
+
+    unique_regions = list(dict.fromkeys(
+        x[1] for x in regions
+        if x[1] != "Москва"
+    ))
+
+    if len(unique_regions) == 1:
+        return None, unique_regions[0]
+
+    return None, None
 
 
 # ============================================================
@@ -814,7 +849,6 @@ WORDS = {
 
     "пять": 5,
     "пятеро": 5,
-
     "шесть": 6,
     "семь": 7,
     "восемь": 8,
@@ -858,38 +892,23 @@ def number(value):
     return WORDS.get(value)
 
 
-# ============================================================
-# ПОГИБШИЕ
-# ============================================================
-
 DEAD_PATTERNS = [
     rf"(?:погибли|погибло)\s+(?:не менее\s+|как минимум\s+)?({NUM})\s+(?:человек|человека|людей)",
     rf"({NUM})\s+(?:человек|человека|людей)\s+(?:погибли|погибло)",
-
-    rf"(?:число|количество)\s+погибших.*?(?:до|составило|достигло)\s+({NUM})",
-    rf"погибших.*?(?:до|составило|достигло)\s+({NUM})",
+    rf"(?:число|количество)\s+погибших.*?(?:до|составило|достигло|увеличилось до)\s+({NUM})",
+    rf"погибших.*?(?:до|составило|достигло|увеличилось до)\s+({NUM})",
 ]
 
-
-# ============================================================
-# ПОСТРАДАВШИЕ
-# ============================================================
 
 INJURED_PATTERNS = [
     rf"(?:пострадали|пострадало)\s+(?:не менее\s+|как минимум\s+)?({NUM})\s+(?:человек|человека|людей)",
     rf"({NUM})\s+(?:человек|человека|людей)\s+(?:пострадали|пострадало)",
-
-    rf"(?:число|количество)\s+пострадавших.*?(?:до|составило|достигло)\s+({NUM})",
-    rf"пострадавших.*?(?:до|составило|достигло)\s+({NUM})",
-
+    rf"(?:число|количество)\s+пострадавших.*?(?:до|составило|достигло|увеличилось до)\s+({NUM})",
+    rf"пострадавших.*?(?:до|составило|достигло|увеличилось до)\s+({NUM})",
     rf"(?:ранены|ранено)\s+({NUM})\s+(?:человек|человека|людей)",
     rf"({NUM})\s+(?:человек|человека|людей)\s+(?:ранены|ранено)",
 ]
 
-
-# ============================================================
-# "ПОГИБ РЕБЁНОК" = 1
-# ============================================================
 
 SINGLE_DEAD = [
     r"\bпогиб\s+реб[её]нок\b",
@@ -900,6 +919,8 @@ SINGLE_DEAD = [
     r"\bпогиб\s+водитель\b",
     r"\bпогибла\s+местная жительница\b",
     r"\bпогиб\s+местный житель\b",
+    r"\bпогиб\s+мирный житель\b",
+    r"\bпогибла\s+мирная жительница\b",
 ]
 
 
@@ -912,97 +933,122 @@ SINGLE_INJURED = [
     r"\bранен\s+мужчина\b",
     r"\bранена\s+женщина\b",
     r"\bранен\s+реб[её]нок\b",
+    r"\bпострадал\s+мирный житель\b",
+    r"\bпострадала\s+мирная жительница\b",
 ]
 
 
-def extract_numbers(incident):
-    sents = split_sentences(incident)
+def extract_from_sentence(sentence):
+    low = sentence.lower()
 
-    dead_candidates = []
-    injured_candidates = []
+    dead = []
+    injured = []
 
-    for index, sent in enumerate(sents):
-        low = sent.lower()
-
-        # ----------------------------
-        # погибшие
-        # ----------------------------
-
-        for pattern in DEAD_PATTERNS:
-            for m in re.finditer(
-                pattern,
-                low,
-                flags=re.I
-            ):
-                n = number(m.group(1))
-
-                if n is not None:
-                    dead_candidates.append(
-                        (index, n, sent)
-                    )
-
-        if any(
-            re.search(p, low)
-            for p in SINGLE_DEAD
+    for pattern in DEAD_PATTERNS:
+        for m in re.finditer(
+            pattern,
+            low,
+            flags=re.I
         ):
-            dead_candidates.append(
-                (index, 1, sent)
-            )
+            n = number(m.group(1))
 
-        # ----------------------------
-        # пострадавшие
-        # ----------------------------
+            if n is not None:
+                dead.append(n)
 
-        for pattern in INJURED_PATTERNS:
-            for m in re.finditer(
-                pattern,
-                low,
-                flags=re.I
-            ):
-                n = number(m.group(1))
+    if any(
+        re.search(pattern, low)
+        for pattern in SINGLE_DEAD
+    ):
+        dead.append(1)
 
-                if n is not None:
-                    injured_candidates.append(
-                        (index, n, sent)
-                    )
-
-        if any(
-            re.search(p, low)
-            for p in SINGLE_INJURED
+    for pattern in INJURED_PATTERNS:
+        for m in re.finditer(
+            pattern,
+            low,
+            flags=re.I
         ):
-            injured_candidates.append(
-                (index, 1, sent)
-            )
+            n = number(m.group(1))
 
-    def choose(candidates):
-        if not candidates:
-            return None
+            if n is not None:
+                injured.append(n)
 
-        # Максимальная цифра в текущем
-        # контексте происшествия.
-        return max(
-            x[1]
-            for x in candidates
-        )
+    if any(
+        re.search(pattern, low)
+        for pattern in SINGLE_INJURED
+    ):
+        injured.append(1)
 
     return (
-        choose(dead_candidates),
-        choose(injured_candidates)
+        max(dead) if dead else None,
+        max(injured) if injured else None
+    )
+
+
+def extract_block_numbers(block):
+    """
+    Цифры сначала берутся из предложения
+    с жертвами.
+
+    Это предотвращает перенос цифр из
+    соседнего региона/эпизода.
+    """
+
+    sentences = block["sentences"]
+    ci = block["casualty_index"]
+
+    dead, injured = extract_from_sentence(
+        sentences[ci]
+    )
+
+    # Если в самом предложении нашли хоть что-то,
+    # этого достаточно.
+    if dead is not None or injured is not None:
+        return dead, injured
+
+    # Иногда: "Погиб мужчина. Еще трое пострадали."
+    # Поэтому смотрим одно соседнее предложение,
+    # но только если оно тоже содержит потери.
+    candidates = []
+
+    for idx in [ci - 1, ci, ci + 1]:
+        if 0 <= idx < len(sentences):
+            sent = sentences[idx]
+
+            if has_casualty(sent):
+                d, inj = extract_from_sentence(sent)
+                candidates.append((d, inj))
+
+    dead_values = [
+        d for d, _ in candidates
+        if d is not None
+    ]
+
+    injured_values = [
+        inj for _, inj in candidates
+        if inj is not None
+    ]
+
+    return (
+        max(dead_values) if dead_values else None,
+        max(injured_values) if injured_values else None
     )
 
 
 # ============================================================
-# ВРЕМЯ ПРОИСШЕСТВИЯ
+# ВРЕМЯ СОБЫТИЯ
 # ============================================================
 
-def incident_time(incident):
+def incident_time(text):
     patterns = [
         r"\bв\s+([01]?\d|2[0-3]):([0-5]\d)\b",
         r"\bоколо\s+([01]?\d|2[0-3]):([0-5]\d)\b",
     ]
 
-    for p in patterns:
-        m = re.search(p, incident)
+    for pattern in patterns:
+        m = re.search(
+            pattern,
+            text.lower()
+        )
 
         if m:
             return (
@@ -1017,29 +1063,59 @@ def incident_time(incident):
 # ОПИСАНИЕ
 # ============================================================
 
-def make_description(incident):
-    sents = split_sentences(incident)
+def make_description(block):
+    sentences = block["sentences"]
+    ci = block["casualty_index"]
 
     chosen = []
 
-    for sent in sents:
-        if has_attack(sent):
-            chosen.append(sent)
+    # Ищем предложение об атаке максимально близко
+    # к предложению о жертвах.
+    for distance in [0, 1, 2]:
 
-        elif chosen and has_casualty(sent):
-            chosen.append(sent)
+        indexes = []
 
-        if len(chosen) >= 2:
+        if distance == 0:
+            indexes = [ci]
+        else:
+            indexes = [
+                ci - distance,
+                ci + distance
+            ]
+
+        for idx in indexes:
+            if 0 <= idx < len(sentences):
+                sent = sentences[idx]
+
+                if has_attack(sent):
+                    chosen.append(sent)
+
+        if chosen:
             break
 
-    if not chosen:
+    casualty_sentence = sentences[ci]
+
+    if (
+        casualty_sentence not in chosen
+        and has_casualty(casualty_sentence)
+    ):
+        chosen.append(casualty_sentence)
+
+    # Убираем повторы
+    unique = []
+
+    for sent in chosen:
+        if sent not in unique:
+            unique.append(sent)
+
+    if not unique:
         return None
 
-    result = " ".join(chosen)
+    result = " ".join(unique)
 
-    if len(result) > 450:
+    if len(result) > 420:
         result = (
-            result[:447]
+            result[:417]
             .rsplit(" ", 1)[0]
             + "..."
         )
@@ -1048,25 +1124,8 @@ def make_description(incident):
 
 
 # ============================================================
-# ДАТА ДЛЯ TELEGRAM
+# ДАТА В ПОСТЕ
 # ============================================================
-
-MONTH_NAMES = [
-    "",
-    "января",
-    "февраля",
-    "марта",
-    "апреля",
-    "мая",
-    "июня",
-    "июля",
-    "августа",
-    "сентября",
-    "октября",
-    "ноября",
-    "декабря",
-]
-
 
 def date_text():
     d = today()
@@ -1079,7 +1138,7 @@ def date_text():
 
 
 # ============================================================
-# КЛЮЧ СОБЫТИЯ
+# ТИП АТАКИ
 # ============================================================
 
 def attack_type(text):
@@ -1089,39 +1148,48 @@ def attack_type(text):
         "бпла" in low
         or "беспилот" in low
         or "дрон" in low
+        or "fpv" in low
     ):
         return "uav"
 
-    if "обстрел" in low:
+    if (
+        "обстрел" in low
+        or "артиллер" in low
+        or "мином" in low
+    ):
         return "shelling"
 
     if "ракет" in low:
         return "missile"
 
-    if "пво" in low or "обломк" in low:
+    if (
+        "пво" in low
+        or "про" in low
+        or "обломк" in low
+    ):
         return "airdefense"
 
     return "attack"
 
 
-def event_key(city, region, incident):
-    """
-    Одно место + один день + тип атаки.
+# ============================================================
+# КЛЮЧ СОБЫТИЯ
+# ============================================================
 
-    Поэтому статья другого СМИ с теми же
-    цифрами не создаст новый пост.
+def event_key(city, region, block):
+    """
+    Место + сегодняшний день + тип атаки.
+
+    Разные СМИ с одним происшествием
+    не создают повторный пост.
     """
 
-    place = (
-        city
-        or region
-        or "unknown"
-    )
+    place = city or region
 
     raw = (
         f"{today().isoformat()}|"
         f"{place.lower()}|"
-        f"{attack_type(incident)}"
+        f"{attack_type(block['text'])}"
     )
 
     return hashlib.sha256(
@@ -1130,7 +1198,7 @@ def event_key(city, region, incident):
 
 
 # ============================================================
-# НОВОСТЬ ИЛИ ОБНОВЛЕНИЕ
+# НОВАЯ ИНФОРМАЦИЯ / ОБНОВЛЕНИЕ
 # ============================================================
 
 def publication_status(
@@ -1146,23 +1214,23 @@ def publication_status(
     old_dead = old.get("dead")
     old_injured = old.get("injured")
 
-    increased = False
-
-    if dead is not None:
-        if (
+    dead_increased = (
+        dead is not None
+        and (
             old_dead is None
             or dead > old_dead
-        ):
-            increased = True
+        )
+    )
 
-    if injured is not None:
-        if (
+    injured_increased = (
+        injured is not None
+        and (
             old_injured is None
             or injured > old_injured
-        ):
-            increased = True
+        )
+    )
 
-    if increased:
+    if dead_increased or injured_increased:
         return "update"
 
     return "skip"
@@ -1172,7 +1240,9 @@ def remember(
     key,
     dead,
     injured,
-    url
+    url,
+    city,
+    region
 ):
     old = state["events"].get(
         key,
@@ -1204,6 +1274,8 @@ def remember(
         "dead": dead,
         "injured": injured,
         "url": url,
+        "city": city,
+        "region": region,
         "date": today().isoformat(),
         "updated": now().isoformat()
     }
@@ -1212,11 +1284,12 @@ def remember(
 
 
 # ============================================================
-# ФОРМАТ МЕСТА
+# МЕСТО
 # ============================================================
 
 def location_text(city, region):
     if city and region:
+
         if city == region:
             return city
 
@@ -1226,7 +1299,7 @@ def location_text(city, region):
 
 
 # ============================================================
-# СООБЩЕНИЕ
+# TELEGRAM
 # ============================================================
 
 def build_message(
@@ -1287,9 +1360,14 @@ def build_message(
         "\n".join(losses)
     )
 
+    safe_url = html.escape(
+        url,
+        quote=True
+    )
+
     parts.append(
         'Источник: '
-        f'<a href="{html.escape(url, quote=True)}">'
+        f'<a href="{safe_url}">'
         f'{html.escape(source)}</a>'
     )
 
@@ -1297,157 +1375,47 @@ def build_message(
 
 
 # ============================================================
-# ОБРАБОТКА НОВОСТИ
+# ОБРАБОТКА ОДНОГО БЛОКА
 # ============================================================
 
-def process(entry, source):
-    title = clean(
-        getattr(entry, "title", "")
-    )
-
-    url = getattr(
-        entry,
-        "link",
-        ""
-    )
-
-    if not title or not url:
-        return
-
-    # Только свежая публикация
-    if not publication_is_current(entry):
-        return
-
-    pub_dt = published_datetime(entry)
-
-    summary = clean(
-        getattr(entry, "summary", "")
-    )
-
-    preview = (
-        title + ". " + summary
-    )
-
-    # Уже RSS должен быть потенциально релевантным
-    if (
-        not has_attack(preview)
-        and not has_casualty(preview)
-    ):
-        return
-
-    article = get_article(url)
-
-    if not article:
-        return
-
-    # Старые репортажи
-    test_text = (
-        title + " " + article[:4000]
-    ).lower()
-
-    if any(
-        marker in test_text
-        for marker in REPORTAGE_WORDS
-    ):
-        print(
-            "SKIP REPORTAGE:",
-            title
-        )
-        return
-
-    # Именно сегодняшнее событие
-    if not is_current_event(
-        title,
-        article,
-        pub_dt
-    ):
-        print(
-            "SKIP OLD EVENT:",
-            title
-        )
-        return
-
-    # Выделяем только конкретное происшествие
-    incident = get_incident_context(
-        title,
-        article
-    )
-
-    if not incident:
-        print(
-            "SKIP NO INCIDENT:",
-            title
-        )
-        return
-
-    if not has_attack(incident):
-        return
-
-    if not has_casualty(incident):
-        return
-
-    # ------------------------------------------
-    # МЕСТО
-    # ------------------------------------------
-
-    city, region = determine_location(
-        title,
-        incident
+def process_block(
+    block,
+    source,
+    url
+):
+    city, region = determine_block_location(
+        block
     )
 
     if not city and not region:
         print(
-            "SKIP UNKNOWN LOCATION:",
-            title
+            "SKIP BLOCK UNKNOWN LOCATION:",
+            block["text"][:150]
         )
         return
 
-    # Дополнительная защита от ложной Москвы
-    if not validate_location(
-        city,
-        region,
-        incident
-    ):
-        print(
-            "SKIP FALSE MOSCOW:",
-            title
-        )
-        return
-
-    # ------------------------------------------
-    # ПОТЕРИ
-    # ------------------------------------------
-
-    dead, injured = extract_numbers(
-        incident
+    dead, injured = extract_block_numbers(
+        block
     )
 
     if dead is None and injured is None:
         print(
-            "SKIP NO NUMBERS:",
-            title
+            "SKIP BLOCK NO NUMBERS:",
+            block["text"][:150]
         )
         return
 
-    # ------------------------------------------
-    # ОПИСАНИЕ
-    # ------------------------------------------
-
     description = make_description(
-        incident
+        block
     )
 
     if not description:
         return
 
-    # ------------------------------------------
-    # АНТИДУБЛЬ
-    # ------------------------------------------
-
     key = event_key(
         city,
         region,
-        incident
+        block
     )
 
     status = publication_status(
@@ -1459,21 +1427,15 @@ def process(entry, source):
     if status == "skip":
         print(
             "SKIP DUPLICATE:",
-            title
+            location_text(city, region),
+            dead,
+            injured
         )
         return
 
-    # ------------------------------------------
-    # ВРЕМЯ
-    # ------------------------------------------
-
     ev_time = incident_time(
-        incident
+        block["text"]
     )
-
-    # ------------------------------------------
-    # TELEGRAM
-    # ------------------------------------------
 
     message = build_message(
         city=city,
@@ -1498,7 +1460,9 @@ def process(entry, source):
         key,
         dead,
         injured,
-        url
+        url,
+        city,
+        region
     )
 
     print(
@@ -1513,7 +1477,132 @@ def process(entry, source):
 
 
 # ============================================================
-# ОЧИСТКА СТАРЫХ СОБЫТИЙ
+# ОБРАБОТКА НОВОСТИ
+# ============================================================
+
+def process(entry, source):
+    title = clean(
+        getattr(
+            entry,
+            "title",
+            ""
+        )
+    )
+
+    url = getattr(
+        entry,
+        "link",
+        ""
+    )
+
+    if not title or not url:
+        return
+
+    if not publication_is_current(entry):
+        return
+
+    pub_dt = published_datetime(entry)
+
+    summary = clean(
+        getattr(
+            entry,
+            "summary",
+            ""
+        )
+    )
+
+    preview = (
+        title + ". " + summary
+    )
+
+    # Сначала дешёвая RSS-фильтрация
+    if not (
+        has_attack(preview)
+        or has_casualty(preview)
+    ):
+        return
+
+    article = get_article(url)
+
+    if not article:
+        return
+
+    # Нужны одновременно атака и жертвы
+    whole_start = (
+        title + ". " +
+        summary + ". " +
+        article[:6000]
+    )
+
+    if not has_attack(whole_start):
+        return
+
+    if not has_casualty(whole_start):
+        return
+
+    # Только сегодняшнее событие
+    if not current_event(
+        title,
+        summary,
+        article,
+        pub_dt
+    ):
+        print(
+            "SKIP OLD EVENT:",
+            title
+        )
+        return
+
+    blocks = incident_blocks(
+        title,
+        article
+    )
+
+    if not blocks:
+        print(
+            "SKIP NO INCIDENT BLOCK:",
+            title
+        )
+        return
+
+    # В одной статье может быть несколько эпизодов.
+    # Каждый обрабатывается отдельно.
+    local_seen = set()
+
+    for block in blocks:
+
+        normalized = re.sub(
+            r"\W+",
+            " ",
+            block["text"].lower()
+        ).strip()
+
+        block_hash = hashlib.sha256(
+            normalized.encode("utf-8")
+        ).hexdigest()
+
+        if block_hash in local_seen:
+            continue
+
+        local_seen.add(block_hash)
+
+        try:
+            process_block(
+                block,
+                source,
+                url
+            )
+
+        except Exception as e:
+            print(
+                "BLOCK ERROR:",
+                source,
+                e
+            )
+
+
+# ============================================================
+# ОЧИСТКА СОСТОЯНИЯ
 # ============================================================
 
 def cleanup():
@@ -1530,6 +1619,7 @@ def cleanup():
             events[key] = value
 
     state["events"] = events
+
     save_state()
 
 
@@ -1551,13 +1641,15 @@ def check_sources():
             )
 
             entries = list(
-                feed.entries[:40]
+                feed.entries[:50]
             )
 
-            # От старых к новым
+            # Сначала более ранние,
+            # потом обновления.
             entries.reverse()
 
             for entry in entries:
+
                 try:
                     process(
                         entry,
@@ -1587,9 +1679,12 @@ print("==============================")
 print("BOT STARTED")
 print("TIME:", now())
 print("CHANNEL:", CHANNEL_ID)
+print("SOURCES:", ", ".join(x[0] for x in SOURCES))
 print("==============================")
 
+
 last_day = today()
+
 
 while True:
 
